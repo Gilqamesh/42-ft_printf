@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/27 15:02:46 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/27 17:06:27 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,13 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+static int	ft_int_max(int a, int b)
+{
+	if (a > b)
+		return (a);
+	return (b);
+}
 
 static char	*malloc_conv_spec(char *format, int *format_index)
 {
@@ -43,7 +50,7 @@ static char	*malloc_conv_spec(char *format, int *format_index)
 	return (conversion_specifier);
 }
 
-static int	set_flags(char *conv_spec, int *flags)
+static int	set_flags(char *conv_spec, int *flags, va_list ap, void **arg_pointer)
 {
 	int		conv_spec_index;
 	char	c;
@@ -72,6 +79,8 @@ static int	set_flags(char *conv_spec, int *flags)
 		if (c == '*')
 		{
 			flags[3] = -1;
+			flags[4] = *(int *)(*arg_pointer);
+			*arg_pointer = va_arg(ap, void *);
 			conv_spec_index++;
 		}
 		else
@@ -89,7 +98,78 @@ static void	print_conversion_c(unsigned char c, int *flags)
 	if (!flags[0] && flags[2])
 		while (--(flags[2]) > 0)
 			ft_putchar_fd(' ', 1);
-	ft_putchar_fd)c
+	write(1, &c, 1);
+}
+
+static void	print_conversion_s(char *str, int *flags)
+{
+	int	str_len;
+	int padding;
+
+	str_len = ft_strlen(str);
+	if (flags[3])
+	{
+		if (flags[3] == -1)
+		{
+			if (flags[4] < str_len)
+				str_len = flags[4];
+		}
+		else
+		{
+			if (flags[3] < str_len)
+				str_len = flags[4];
+		}
+	}
+	if (flags[2] > str_len)
+	{
+		if (flags[0])
+		{
+			while (*str && str_len)
+			{
+				write(1, *str++, 1);
+				str_len--;
+			}
+			while (str_len--)
+				ft_putchar_fd(' ', 1);
+		}
+		else
+		{
+			while ((flags[2])-- > str_len)
+				ft_putchar_fd(' ', 1);
+			while (*str && str_len)
+			{
+				write(1, *str++, 1);
+				str_len--;
+			}
+		}	
+	}
+}
+
+static int	print_ltoh(unsigned long n)
+{
+	static char	hexa[] = "0123456789abcdef";
+	int			calls;
+
+	calls = 0;
+	if (n < 16)
+	{
+		write(1, &hexa[n % 16], 1);
+		return 1;
+	}
+	calls = print_ltoh(n / 16) + 1;
+	write(1, &hexa[n % 16], 1);
+	return (calls);
+}
+
+static int	n_of_digitsl()
+
+static void	print_conversion_p(void *arg_pointer, int *flags)
+{
+	int addr_len;
+
+	
+	write(1, "0x", 2);
+	print_ltoh((unsigned long)arg_pointer) + 2;
 }
 
 static void	print_conversion(char conversion, void *arg_pointer, int *flags)
@@ -100,11 +180,11 @@ static void	print_conversion(char conversion, void *arg_pointer, int *flags)
 	}
 	else if (conversion == 's')
 	{
-
+		print_conversion_s((char *)arg_pointer, flags);
 	}
 	else if (conversion == 'p')
 	{
-		
+		print_conversion_p(arg_pointer, flags);
 	}
 	else if (conversion == 'd' || conversion == 'i')
 	{
@@ -121,7 +201,7 @@ static void	print_conversion(char conversion, void *arg_pointer, int *flags)
 }
 
 // %[$][flags][width][.precision][length modifier]conversion
-static int	handle_conversion_spec(void *arg_pointer, char *conv_spec)
+static int	handle_conversion_spec(void **arg_pointer, char *conv_spec, va_list ap)
 {
 	/*
 		convert conv_spec into the expected str that needs to be written to stdout
@@ -133,7 +213,7 @@ static int	handle_conversion_spec(void *arg_pointer, char *conv_spec)
 	int		*flags;
 
 	conv_spec_index = 0;
-	flags = ft_calloc(4, sizeof(int));
+	flags = ft_calloc(5, sizeof(int));
 	while (conv_spec[conv_spec_index])
 	{
 		// Flag char '-' flags[0]
@@ -167,8 +247,9 @@ static int	handle_conversion_spec(void *arg_pointer, char *conv_spec)
 		// a field; if the result of a conversion is wider than the field
 		// width, the field is expanded to contain the conversion result.
 		//
-		// Precision: flags[3] (if there is precision, -1 if *, otherwise
-		// the decimal value of the decimal digit string
+		// Precision: flags[3] (store if there is precision, -1 if *, otherwise
+		// the decimal value of the decimal digit string from the argument
+		// flags[4] is taken from the argument of printf
 		// An optional precision, in the form of a period ('.')  followed by
 		// an optional decimal digit string.  Instead of a decimal digit
 		// string one may write "*" or "*m$" (for some decimal integer m) to
@@ -187,7 +268,7 @@ static int	handle_conversion_spec(void *arg_pointer, char *conv_spec)
 		// Parameter: conv_spec string, pointer to flags pointer
 		// Return: increment conv_spec_index
 		// Side effect: set flags pointer
-		conv_spec_index += set_flags(conv_spec, flags);
+		conv_spec_index += set_flags(conv_spec, flags, ap, arg_pointer);
 		
 		// Length modifier might not be needed
 
@@ -226,7 +307,7 @@ static int	handle_conversion_spec(void *arg_pointer, char *conv_spec)
 		//				flags pointer
 		// Return: nothing
 		// Side-effect: writes ap converted to the correct type to stdout
-		print_conversion(conv_spec[conv_spec_index++], arg_pointer, flags);
+		print_conversion(conv_spec[conv_spec_index++], *arg_pointer, flags);
 	}
 }
 
@@ -271,7 +352,7 @@ int	ft_printf(const char *format, ...)
 			conversion_specifier = malloc_conv_spec(format,  &format_index);
 
 			// function that handles the format specifier string
-			n_of_printed += handle_conversion_spec(arg_pointer, conversion_specifier, ap);
+			n_of_printed += handle_conversion_spec(&arg_pointer, conversion_specifier, ap);
 		}
 		else
 		{

@@ -2,7 +2,7 @@
 
 int main(void)
 {
-	char *str = "%";
-	printf("%s", str);
+	char *str;
+	printf("%-20p", str);
 	return (0);
 }
