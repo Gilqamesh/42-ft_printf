@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/27 17:06:27 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/27 19:52:49 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,59 +145,130 @@ static void	print_conversion_s(char *str, int *flags)
 	}
 }
 
-static int	print_ltoh(unsigned long n)
+static void	print_ultoh(unsigned long n)
 {
 	static char	hexa[] = "0123456789abcdef";
-	int			calls;
 
-	calls = 0;
 	if (n < 16)
 	{
 		write(1, &hexa[n % 16], 1);
-		return 1;
+		return ;
 	}
-	calls = print_ltoh(n / 16) + 1;
+	print_ltoh(n / 16) + 1;
 	write(1, &hexa[n % 16], 1);
-	return (calls);
 }
 
-static int	n_of_digitsl()
+static int	digits_in_hexa(unsigned long n)
+{
+	int	digits;
+
+	if (n == 0)
+		return (1);
+	digits = 0;
+	while (n)
+	{
+		n /= 16;
+		digits++;
+	}
+	return (digits);
+}
 
 static void	print_conversion_p(void *arg_pointer, int *flags)
 {
 	int addr_len;
 
+	addr_len = digits_in_hexa((unsigned long)arg_pointer);
+	if (flags[0])
+	{
+		write(1, "0x", 2);
+		print_ultoh((unsigned long)arg_pointer);
+		while ((flags[2])-- - (addr_len + 2) > 0)
+			ft_putchar_fd(' ', 1);
+	}
+	else
+	{
+		while (flags[2]-- > addr_len + 2)
+			ft_putchar_fd(' ', 1);
+		write(1, "0x", 2);
+		print_ultoh((unsigned long)arg_pointer);
+	}
+}
+
+static void	print_conversion_int(void *arg_pointer, int *flags)
+{
+	char	*converted_str;
+	char	conv_str_len;
+	int		pad_zeros;
+
+	converted_str = ft_itoa(*(int *)arg_pointer);
+	conv_str_len = ft_strlen(converted_str);
+	if (flags[0] && flags[1])
+		pad_zeros = 0;
+	if (flags[3])
+		pad_zeros = ft_int_max(flags[3], flags[4]) - conv_str_len;
+	if (flags[0])
+	{
+		if (pad_zeros > 0)
+			while(pad_zeros--)
+				ft_putchar_fd('0', 1);
+		ft_putstr_fd(converted_str, 1);
+	}
+	else
+	{
+		ft_putstr_fd(converted_str, 1);
+		if (pad_zeros > 0)
+			while(pad_zeros--)
+				ft_putchar_fd('0', 1);
+	}
+}
+
+static void	print_conversion_uint(unsigned int n, int *flags)
+{
+	char	*converted_str;
+	char	conv_str_len;
+	int		pad_zeros;
+
+	converted_str = ft_itoa(n);
+	conv_str_len = ft_strlen(converted_str);
+	if (flags[0] && flags[1])
+		pad_zeros = 0;
+	if (flags[3])
+		pad_zeros = ft_int_max(flags[3], flags[4]) - conv_str_len;
+	if (flags[0])
+	{
+		if (pad_zeros > 0)
+			while(pad_zeros--)
+				ft_putchar_fd('0', 1);
+		ft_putstr_fd(converted_str, 1);
+	}
+	else
+	{
+		ft_putstr_fd(converted_str, 1);
+		if (pad_zeros > 0)
+			while(pad_zeros--)
+				ft_putchar_fd('0', 1);
+	}
+}
+
+static void	print_conversion_hexa(unsigned int n, int *flags)
+{
 	
-	write(1, "0x", 2);
-	print_ltoh((unsigned long)arg_pointer) + 2;
 }
 
 static void	print_conversion(char conversion, void *arg_pointer, int *flags)
 {
 	if (conversion == 'c')
-	{
 		print_coversion_c(*(unsigned char*)arg_pointer, flags);
-	}
 	else if (conversion == 's')
-	{
 		print_conversion_s((char *)arg_pointer, flags);
-	}
 	else if (conversion == 'p')
-	{
 		print_conversion_p(arg_pointer, flags);
-	}
 	else if (conversion == 'd' || conversion == 'i')
-	{
-		
-	}
+		print_conversion_int(arg_pointer, flags);
 	else if (conversion == 'u')
-	{
-
-	}
+		print_conversion_uint(*(unsigned int *)arg_pointer, flags);
 	else if (conversion == 'x' || conversion == 'X')
-	{
-		
-	}
+		print_conversion_hexa(*(unsigned int *)arg_pointer, flags);
 }
 
 // %[$][flags][width][.precision][length modifier]conversion

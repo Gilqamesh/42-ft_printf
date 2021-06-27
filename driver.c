@@ -2,7 +2,6 @@
 
 int main(void)
 {
-	char *str;
-	printf("%-20p", str);
+	printf("%d", -321312);
 	return (0);
 }
