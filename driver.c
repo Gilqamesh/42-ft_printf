@@ -2,6 +2,6 @@
 
 int main(void)
 {
-	printf("%d", -321312);
+	printf("%x", -321312);
 	return (0);
 }

@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/27 19:52:49 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/27 20:02:03 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -252,6 +252,9 @@ static void	print_conversion_uint(unsigned int n, int *flags)
 
 static void	print_conversion_hexa(unsigned int n, int *flags)
 {
+	int	n_digits_in_h;
+
+	n_digits_in_h = digits_in_hexa(n);
 	
 }
 
