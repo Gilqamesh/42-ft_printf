@@ -3,7 +3,9 @@
 
 int main(void)
 {
-	ft_printf("abc %d abc", 12345);
+	int n = -123;
+	ft_printf("abc %x abc\n", n);
+	printf("abc %X abc\n", n);
 
 	return (0);
 }

@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/28 17:03:24 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/28 21:05:56 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "ft_printf.h"
 #include "./libft/libft.h"
 #include <stdio.h>
+#include <limits.h>
 
 static int	ft_int_max(int a, int b)
 {
@@ -53,7 +54,7 @@ static char	*malloc_conv_spec(char *format, int *format_index)
 	return (conversion_specifier);
 }
 
-static int	set_flags(char *conv_spec, int *flags, va_list ap, void **arg_pointer)
+static int	set_flags(char *conv_spec, int *flags, va_list ap)
 {
 	int		conv_spec_index;
 	char	c;
@@ -82,8 +83,7 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap, void **arg_pointer
 		if (c == '*')
 		{
 			flags[3] = -1;
-			flags[4] = *(int *)(*arg_pointer);
-			*arg_pointer = va_arg(ap, void *);
+			flags[4] = va_arg(ap, int);
 			conv_spec_index++;
 		}
 		else
@@ -155,19 +155,25 @@ static int	print_conversion_s(char *str, int *flags)
 			}
 		}	
 	}
+	else
+		ft_putstr_fd(str, 1);
 	return (printed_bytes);
 }
 
-static void	print_ultoh(unsigned long n)
+static void	print_ultoh(unsigned long n, char check_casing)
 {
 	static char	hexa[] = "0123456789abcdef";
 
 	if (n < 16)
 	{
-		write(1, &hexa[n % 16], 1);
+		if (check_casing >= 'a' && check_casing <= 'z')
+			write(1, &hexa[n % 16], 1);
+		else
+			write(1, ft_toupper(&hexa[n % 16]));
+			// FIX THIS
 		return ;
 	}
-	print_ultoh(n / 16);
+	print_ultoh(n / 16, check_casing);
 	write(1, &hexa[n % 16], 1);
 }
 
@@ -216,47 +222,7 @@ static int	print_conversion_p(void *arg_pointer, int *flags)
 	return (addr_len + printed_spaces + 2);
 }
 
-static int	print_conversion_int(void *arg_pointer, int *flags)
-{
-	char	*converted_str;
-	char	conv_str_len;
-	int		pad_zeros;
-
-	converted_str = ft_itoa(*(int *)arg_pointer);
-	/* bug in ft_itoa */
-	printf("Made it this far\n");
-	conv_str_len = ft_strlen(converted_str);
-	if (flags[0] && flags[1])
-		pad_zeros = 0;
-	if (flags[3])
-		pad_zeros = ft_int_max(flags[3], flags[4]) - conv_str_len;
-	if (pad_zeros)
-	{
-		if (flags[0])
-		{
-			if (pad_zeros > 0)
-				while(pad_zeros--)
-					ft_putchar_fd('0', 1);
-			ft_putstr_fd(converted_str, 1);
-		}
-		else
-		{
-			ft_putstr_fd(converted_str, 1);
-			if (pad_zeros > 0)
-				while(pad_zeros--)
-					ft_putchar_fd('0', 1);
-		}	
-	}
-	else if (flags[0] && flags[2] > conv_str_len)
-	{
-		ft_putstr_fd(converted_str, 1);
-		while (flags[2]-- > conv_str_len)
-			ft_putchar_fd(' ', 1);
-	}
-	return (pad_zeros + conv_str_len);
-}
-
-static int	print_conversion_uint(unsigned int n, int *flags)
+static int	print_conversion_int(int n, int *flags)
 {
 	char	*converted_str;
 	char	conv_str_len;
@@ -264,6 +230,7 @@ static int	print_conversion_uint(unsigned int n, int *flags)
 
 	converted_str = ft_itoa(n);
 	conv_str_len = ft_strlen(converted_str);
+	pad_zeros = 0;
 	if (flags[0] && flags[1])
 		pad_zeros = 0;
 	if (flags[3])
@@ -291,15 +258,102 @@ static int	print_conversion_uint(unsigned int n, int *flags)
 		while (flags[2]-- > conv_str_len)
 			ft_putchar_fd(' ', 1);
 	}
+	else
+		ft_putstr_fd(converted_str, 1);
 	return (pad_zeros + conv_str_len);
 }
 
-static int	print_conversion_hexa(unsigned int n, int *flags)
+
+static char	*ft_initstr(char **str, int len, int is_zero)
+{
+	*str = (char *)malloc(len + 1);
+	if (!*str)
+		return ((char *)0);
+	*(*str + len) = '\0';
+	if (is_zero)
+		**str = '0';
+	return (*str);
+}
+
+static int	ft_uintlen(unsigned int n)
+{
+	int	len;
+
+	if (!n)
+		return (1);
+	len = 0;
+	while (n)
+	{
+		n /= 10;
+		len++;
+	}
+	return (len);
+}
+
+static char	*ft_utoa(unsigned int n)
+{
+	int		len;
+	char	*str;
+
+	len = ft_uintlen(n);
+	if (!ft_initstr(&str, len, !n))
+		return ((char *)0);
+	while (n)
+	{
+		*(str + --len) = n % 10 + '0';
+		n /= 10;
+	}
+	return (str);
+}
+
+static int	print_conversion_uint(unsigned int n, int *flags)
+{
+	char			*converted_str;
+	char			conv_str_len;
+	int				pad_zeros;
+
+	converted_str = ft_utoa(n);
+	conv_str_len = ft_strlen(converted_str);
+	pad_zeros = 0;
+	if (flags[0] && flags[1])
+		pad_zeros = 0;
+	if (flags[3])
+		pad_zeros = ft_int_max(flags[3], flags[4]) - conv_str_len;
+	if (pad_zeros)
+	{
+		if (flags[0])
+		{
+			if (pad_zeros > 0)
+				while(pad_zeros--)
+					ft_putchar_fd('0', 1);
+			ft_putstr_fd(converted_str, 1);
+		}
+		else
+		{
+			ft_putstr_fd(converted_str, 1);
+			if (pad_zeros > 0)
+				while(pad_zeros--)
+					ft_putchar_fd('0', 1);
+		}	
+	}
+	else if (flags[0] && flags[2] > conv_str_len)
+	{
+		ft_putstr_fd(converted_str, 1);
+		while (flags[2]-- > conv_str_len)
+			ft_putchar_fd(' ', 1);
+	}
+	else
+		ft_putstr_fd(converted_str, 1);
+	return (pad_zeros + conv_str_len);
+}
+
+static int	print_conversion_hexa(unsigned int n, int *flags, char check_casing)
 {
 	int	n_digits_in_h;
 	int	pad_zeros;
 
 	n_digits_in_h = digits_in_hexa(n);
+	pad_zeros = 0;
 	if (flags[0] && flags[1])
 		pad_zeros = 0;
 	if (flags[3])
@@ -311,11 +365,11 @@ static int	print_conversion_hexa(unsigned int n, int *flags)
 			if (pad_zeros > 0)
 				while(pad_zeros--)
 					ft_putchar_fd('0', 1);
-			print_ultoh(n);
+			print_ultoh(n, check_casing);
 		}
 		else
 		{
-			print_ultoh(n);
+			print_ultoh(n, check_casing);
 			if (pad_zeros > 0)
 				while(pad_zeros--)
 					ft_putchar_fd('0', 1);
@@ -323,33 +377,35 @@ static int	print_conversion_hexa(unsigned int n, int *flags)
 	}
 	else if (flags[0] && flags[2] > n_digits_in_h)
 	{
-		print_ultoh(n);
+		print_ultoh(n, check_casing);
 		while (flags[2]-- > n_digits_in_h)
 			ft_putchar_fd(' ', 1);
 	}
+	else
+		print_ultoh(n, check_casing);
 	return (n_digits_in_h + pad_zeros);
 }
 
-static int	print_conversion(char conversion, void *arg_pointer, int *flags)
+static int	print_conversion(char conversion, va_list ap, int *flags)
 {
 	if (conversion == 'c')
-		return (print_conversion_c(*(unsigned char*)arg_pointer, flags));
+		return (print_conversion_c((unsigned char)va_arg(ap, int), flags));
 	else if (conversion == 's')
-		return (print_conversion_s((char *)arg_pointer, flags));
+		return (print_conversion_s(va_arg(ap, char *), flags));
 	else if (conversion == 'p')
-		return (print_conversion_p(arg_pointer, flags));
+		return (print_conversion_p(va_arg(ap, void *), flags));
 	else if (conversion == 'd' || conversion == 'i')
-		return (print_conversion_int(arg_pointer, flags));
+		return (print_conversion_int(va_arg(ap, int), flags));
 	else if (conversion == 'u')
-		return (print_conversion_uint(*(unsigned int *)arg_pointer, flags));
+		return (print_conversion_uint((unsigned int)va_arg(ap, int), flags));
 	else if (conversion == 'x' || conversion == 'X')
-		return (print_conversion_hexa(*(unsigned int *)arg_pointer, flags));
+		return (print_conversion_hexa((unsigned int)va_arg(ap, int), flags, conversion));
 	else
 		return (-1);
 }
 
 // %[$][flags][width][.precision][length modifier]conversion
-static int	handle_conversion_spec(void **arg_pointer, char *conv_spec, va_list ap)
+static int	handle_conversion_spec(char *conv_spec, va_list ap)
 {
 	/*
 		convert conv_spec into the expected str that needs to be written to stdout
@@ -411,7 +467,7 @@ static int	handle_conversion_spec(void **arg_pointer, char *conv_spec, va_list a
 	// Parameter: conv_spec string, pointer to flags pointer
 	// Return: increment conv_spec_index
 	// Side effect: set flags pointer
-	conversion_index = set_flags(conv_spec, flags, ap, arg_pointer);
+	conversion_index = set_flags(conv_spec, flags, ap);
 	
 	// Length modifier might not be needed
 
@@ -450,7 +506,7 @@ static int	handle_conversion_spec(void **arg_pointer, char *conv_spec, va_list a
 	//				flags pointer
 	// Return: nothing
 	// Side-effect: writes ap converted to the correct type to stdout
-	return (print_conversion(conv_spec[conversion_index], *arg_pointer, flags));
+	return (print_conversion(conv_spec[conversion_index], ap, flags));
 }
 
 int	ft_printf(const char *format, ...)
@@ -459,7 +515,6 @@ int	ft_printf(const char *format, ...)
 	int		format_index;
 	int		n_of_printed;
 	char	*conversion_specifier;
-	void	*arg_pointer;
 
 	format_index = 0;
 	n_of_printed = 0;
@@ -474,7 +529,6 @@ int	ft_printf(const char *format, ...)
 				format_index++;
 				continue ;
 			}
-			arg_pointer = va_arg(ap, void *);
 			format_index++;
 			/*
 				store conversion specifier in a str and advance the 
@@ -494,7 +548,7 @@ int	ft_printf(const char *format, ...)
 			conversion_specifier = malloc_conv_spec((char *)format + format_index,  &format_index);
 
 			// function that handles the format specifier string
-			n_of_printed += handle_conversion_spec(&arg_pointer, conversion_specifier, ap);
+			n_of_printed += handle_conversion_spec(conversion_specifier, ap);
 		}
 		else
 		{
