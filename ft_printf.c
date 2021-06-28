@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/28 16:56:32 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/28 17:03:24 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -223,6 +223,8 @@ static int	print_conversion_int(void *arg_pointer, int *flags)
 	int		pad_zeros;
 
 	converted_str = ft_itoa(*(int *)arg_pointer);
+	/* bug in ft_itoa */
+	printf("Made it this far\n");
 	conv_str_len = ft_strlen(converted_str);
 	if (flags[0] && flags[1])
 		pad_zeros = 0;
