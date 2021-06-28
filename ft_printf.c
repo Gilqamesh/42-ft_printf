@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/28 16:31:35 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/28 16:56:32 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,6 @@ static char	*malloc_conv_spec(char *format, int *format_index)
 		conversion_specifier[index] = format[index];
 	conversion_specifier[index] = '\0';
 	*format_index += format_len;
-	printf("%s\n", conversion_specifier);
 	return (conversion_specifier);
 }
 
@@ -490,7 +489,7 @@ int	ft_printf(const char *format, ...)
 			*/
 			// get the str of the conversion specifier via function
 			// increase format_index as a side effect
-			conversion_specifier = malloc_conv_spec((char *)format,  &format_index);
+			conversion_specifier = malloc_conv_spec((char *)format + format_index,  &format_index);
 
 			// function that handles the format specifier string
 			n_of_printed += handle_conversion_spec(&arg_pointer, conversion_specifier, ap);
