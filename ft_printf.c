@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/29 12:10:21 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/29 12:40:50 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,8 +88,8 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 		}
 		else
 		{
-			if (!ft_isdigit(c))
-				flags[3] = -3;
+			if (!ft_isdigit(c)) // 0 precision
+				flags[3] = -2;
 			else if (c == '0')
 				flags[3] = -2;
 			else
@@ -128,7 +128,12 @@ static int	print_conversion_s(char *str, int *flags)
 	int	str_len;
 	int printed_bytes;
 	int	precision;
+	int	i;
+	int is_null;
 
+	is_null = 0;
+	if (!str)
+		is_null = 1;
 	if (flags[3] == -2)			// 0 precision
 		precision = 0;
 	else if (flags[3] == -3) 	// no precision
@@ -138,7 +143,9 @@ static int	print_conversion_s(char *str, int *flags)
 	else						// has precision
 		precision = flags[3];
 	printed_bytes = 0;
-	str_len = ft_strlen(str);
+	if (!is_null)
+		str_len = ft_strlen(str);
+	str_len = 0;
 	if (precision > str_len)
 		precision = str_len;
 	// printf("in print_conversion_s: %s\n", str);
@@ -175,15 +182,62 @@ static int	print_conversion_s(char *str, int *flags)
 	// 	while (str_len--)
 	// 		write(1, str++, 1);
 	// printf("precision: %d\n", precision);
-	if (flags[2] > ft_int_max(precision, 0)) // need to pad
+	if (precision == -1) // no truncation
 	{
-		if (precision != -1 && precision < str_len) // truncation
+		if (flags[2] > str_len) // padding
+		{
+			if (flags[0]) // left justified
+			{
+				if (is_null)
+				{
+					printed_bytes = 6;
+					write(1, "(null)", 6);
+				}
+				else
+					ft_putstr_fd(str, 1);
+				while (flags[2]-- - str_len)
+					ft_putchar_fd(' ', 1);
+			}
+			else // right justified
+			{
+				while (flags[2]-- - str_len)
+					ft_putchar_fd(' ', 1);
+				if (is_null)
+				{
+					printed_bytes = 6;
+					write(1, "(null)", 6);
+				}
+				else
+					ft_putstr_fd(str, 1);
+			}
+		}
+		else // no padding
+		{
+			if (is_null)
+			{
+				printed_bytes = 6;
+				write(1, "(null)", 6);
+			}
+			else
+				ft_putstr_fd(str, 1);
+		}
+	}
+	else if (flags[2] > precision) // need to pad
+	{
+		if (precision < str_len) // truncation
 		{
 			printed_bytes = precision + flags[2] - str_len;
 			if (flags[0]) // left justified
 			{
-				while (precision--)
-					write(1, str++, 1);
+				i = -1;
+				if (is_null)
+				{
+					printed_bytes = 6;
+					write(1, "(null)", 6);
+				}
+				else
+					while (++i < precision)
+						write(1, str++, 1);
 				while (flags[2]-- - precision)
 					ft_putchar_fd(' ', 1);
 			}
@@ -191,8 +245,14 @@ static int	print_conversion_s(char *str, int *flags)
 			{
 				while (flags[2]-- - precision)
 					ft_putchar_fd(' ', 1);
-				while (precision--)
-					write(1, str++, 1);
+				if (is_null)
+				{
+					printed_bytes = 6;
+					write(1, "(null)", 6);
+				}
+				else
+					while (precision--)
+						write(1, str++, 1);
 			}
 		}
 		else // no truncation
@@ -200,7 +260,13 @@ static int	print_conversion_s(char *str, int *flags)
 			printed_bytes = flags[2] - str_len;
 			if (flags[0]) // left justified
 			{
-				ft_putstr_fd(str, 1);
+				if (is_null)
+				{
+					printed_bytes = 6;
+					write(1, "(null)", 6);
+				}
+				else
+					ft_putstr_fd(str, 1);
 				while (flags[2]-- - str_len)
 					ft_putchar_fd(' ', 1);
 			}
@@ -208,22 +274,40 @@ static int	print_conversion_s(char *str, int *flags)
 			{
 				while (flags[2]-- - str_len)
 					ft_putchar_fd(' ', 1);
-				ft_putstr_fd(str, 1);
+				if (is_null)
+				{
+					printed_bytes = 6;
+					write(1, "(null)", 6);
+				}
+				else
+					ft_putstr_fd(str, 1);
 			}
 		}
 	}
 	else // dont need to pad
 	{
-		if (precision != -1 && precision < str_len) // truncation
+		if (precision < str_len) // truncation
 		{
 			printed_bytes = precision;
-			while (precision--)
-				write(1, str++, 1);
+			if (is_null)
+			{
+				printed_bytes = 6;
+				write(1, "(null)", 6);
+			}
+			else
+				while (precision--)
+					write(1, str++, 1);
 		}
 		else // no truncation
 		{
 			printed_bytes = str_len;
-			ft_putstr_fd(str, 1);
+			if (is_null)
+			{
+				printed_bytes = 6;
+				write(1, "(null)", 6);
+			}
+			else
+				ft_putstr_fd(str, 1);
 		}
 	}
 	return (printed_bytes);
@@ -484,6 +568,7 @@ static int	handle_conversion_spec(char *conv_spec, va_list ap)
 	*/
 	int		*flags;
 	int		conversion_index;
+	int		printed_bytes;
 
 	flags = ft_calloc(5, sizeof(int));
 	// Flag char '-' flags[0]
@@ -577,7 +662,9 @@ static int	handle_conversion_spec(char *conv_spec, va_list ap)
 	//				flags pointer
 	// Return: nothing
 	// Side-effect: writes ap converted to the correct type to stdout
-	return (print_conversion(conv_spec[conversion_index], ap, flags));
+	printed_bytes = print_conversion(conv_spec[conversion_index], ap, flags);
+	free(flags);
+	return (printed_bytes);
 }
 
 int	ft_printf(const char *format, ...)

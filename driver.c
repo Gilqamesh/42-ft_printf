@@ -3,9 +3,8 @@
 
 int main(void)
 {
-	ft_printf("%5s", "goes over");
-	printf("%5s", "goes over");
-	// getting timeout
+	ft_printf("hello, %s.", NULL);
+	printf("hello, %s.", NULL);
 
 	return (0);
 }
