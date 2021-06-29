@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/29 15:46:01 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/29 16:40:50 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,11 +133,9 @@ static int	print_conversion_s(char *str, int *flags)
 	int	i;
 	int is_null;
 
-	printf("in print_conversion_s: %s\n", str);
 	is_null = 0;
 	if (!str)
 	{
-		printf("saddasdasdsadasdasdas"); 
 		is_null = 1;
 		str = "(null)";
 	}
@@ -292,7 +290,7 @@ static int	print_conversion_p(void *arg_pointer, int *flags)
 	return (addr_len + printed_spaces + 2);
 }
 
-static void	remove_negative(char **str)
+static void	shift_str(char **str)
 {
 	int		str_len;
 	char	*trunc_str;
@@ -313,9 +311,7 @@ static int	print_conversion_int(int n, int *flags)
 	int		printed_bytes;
 	int		is_negative;
 
-	if (flags[3] == -2 && !n)	// if 0 precision and n is 0
-		return (0);
-	else if (flags[3] == -3)	// no precision
+	if (flags[3] == -3)	// no precision
 		precision = -1;
 	else if (flags[3] == -1) 	// read from *
 		precision = flags[4];
@@ -326,7 +322,9 @@ static int	print_conversion_int(int n, int *flags)
 		is_negative = 1;
 	converted_str = ft_itoa(n);
 	if (is_negative)
-		remove_negative(&converted_str);
+		shift_str(&converted_str);
+	if (flags[3] == -2 && !n)	// if 0 precision and n is 0
+		shift_str(&converted_str);
 	conv_str_len = ft_strlen(converted_str);
 
 	if (precision > conv_str_len) // pad precision - conv_str_len 0s
@@ -365,25 +363,46 @@ static int	print_conversion_int(int n, int *flags)
 			ft_putstr_fd(converted_str, 1);
 		}
 	}
-	else // no 0 padding
+	else // precision less than or equal to str_len
 	{
-		if (flags[2] > conv_str_len) // space padded
+		if (flags[2] > conv_str_len) // padded
 		{
 			printed_bytes = flags[2];
-			if (flags[0]) // left justified
+			if (flags[0])
 			{
-				if (is_negative)
-					ft_putchar_fd('-', 1);
-				ft_putstr_fd(converted_str, 1);
-				while (flags[2]-- - conv_str_len - is_negative)
-					ft_putchar_fd(' ', 1);
+				if (flags[1] && precision == -1) // 0 padded instead of space
+				{
+					if (is_negative)
+						ft_putchar_fd('-', 1);
+					while (flags[2]-- - conv_str_len - is_negative)
+						ft_putchar_fd('0', 1);
+					ft_putstr_fd(converted_str, 1);
+				}
+				else
+				{
+					if (is_negative)
+						ft_putchar_fd('-', 1);
+					ft_putstr_fd(converted_str, 1);
+					while (flags[2]-- - conv_str_len - is_negative)
+						ft_putchar_fd(' ', 1);
+				}
 			}
 			else // right justified
 			{
-				while (flags[2]-- - conv_str_len - is_negative)
-					ft_putchar_fd(' ', 1);
-				if (is_negative)
-					ft_putchar_fd('-', 1);
+				if (flags[1] && precision == -1)
+				{
+					if (is_negative)
+						ft_putchar_fd('-', 1);
+					while (flags[2]-- - conv_str_len - is_negative)
+						ft_putchar_fd('0', 1);
+				}
+				else
+				{
+					while (flags[2]-- - conv_str_len - is_negative)
+						ft_putchar_fd(' ', 1);
+					if (is_negative)
+						ft_putchar_fd('-', 1);
+				}
 				ft_putstr_fd(converted_str, 1);
 			}
 		}
@@ -396,37 +415,6 @@ static int	print_conversion_int(int n, int *flags)
 		}
 	}
 	return (printed_bytes);
-	// pad_zeros = 0;
-	// if (flags[0] && flags[1])
-	// 	pad_zeros = 0;
-	// if (flags[3])
-	// 	pad_zeros = ft_int_max(flags[3], flags[4]) - conv_str_len;
-	// if (pad_zeros)
-	// {
-	// 	if (flags[0])
-	// 	{
-	// 		if (pad_zeros > 0)
-	// 			while(pad_zeros--)
-	// 				ft_putchar_fd('0', 1);
-	// 		ft_putstr_fd(converted_str, 1);
-	// 	}
-	// 	else
-	// 	{
-	// 		ft_putstr_fd(converted_str, 1);
-	// 		if (pad_zeros > 0)
-	// 			while(pad_zeros--)
-	// 				ft_putchar_fd('0', 1);
-	// 	}	
-	// }
-	// else if (flags[0] && flags[2] > conv_str_len)
-	// {
-	// 	ft_putstr_fd(converted_str, 1);
-	// 	while (flags[2]-- > conv_str_len)
-	// 		ft_putchar_fd(' ', 1);
-	// }
-	// else
-	// 	ft_putstr_fd(converted_str, 1);
-	// return (pad_zeros + conv_str_len);
 }
 
 
@@ -474,43 +462,92 @@ static char	*ft_utoa(unsigned int n)
 
 static int	print_conversion_uint(unsigned int n, int *flags)
 {
-	char			*converted_str;
-	char			conv_str_len;
-	int				pad_zeros;
+	char	*converted_str;
+	char	conv_str_len;
+	int		precision;
+	int		printed_bytes;
 
+	if (flags[3] == -3)	// no precision
+		precision = -1;
+	else if (flags[3] == -1) 	// read from *
+		precision = flags[4];
+	else						// has precision
+		precision = flags[3];
 	converted_str = ft_utoa(n);
+	if (flags[3] == -2 && !n)	// if 0 precision and n is 0
+		shift_str(&converted_str);
 	conv_str_len = ft_strlen(converted_str);
-	pad_zeros = 0;
-	if (flags[0] && flags[1])
-		pad_zeros = 0;
-	if (flags[3])
-		pad_zeros = ft_int_max(flags[3], flags[4]) - conv_str_len;
-	if (pad_zeros)
+
+	if (precision > conv_str_len) // pad precision - conv_str_len 0s
 	{
-		if (flags[0])
+		if (flags[2] > precision) // space padded by flags[2] - precision
 		{
-			if (pad_zeros > 0)
-				while(pad_zeros--)
+			printed_bytes = flags[2];
+			if (flags[0]) // left justified
+			{
+				while (precision - conv_str_len++)
 					ft_putchar_fd('0', 1);
+				ft_putstr_fd(converted_str, 1);
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+			}
+			else // right justified
+			{
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+				while (precision-- - conv_str_len)
+					ft_putchar_fd('0', 1);
+				ft_putstr_fd(converted_str, 1);
+			}
+		}
+		else // not space padded, left justified by default
+		{
+			printed_bytes = precision;
+			while (precision-- - conv_str_len)
+				ft_putchar_fd('0', 1);
 			ft_putstr_fd(converted_str, 1);
 		}
-		else
+	}
+	else // precision less than or equal to str_len
+	{
+		if (flags[2] > conv_str_len) // padded
+		{
+			printed_bytes = flags[2];
+			if (flags[0])
+			{
+				if (flags[1] && precision == -1) // 0 padded instead of space
+				{
+					while (flags[2]-- - conv_str_len)
+						ft_putchar_fd('0', 1);
+					ft_putstr_fd(converted_str, 1);
+				}
+				else
+				{
+					ft_putstr_fd(converted_str, 1);
+					while (flags[2]-- - conv_str_len)
+						ft_putchar_fd(' ', 1);
+				}
+			}
+			else // right justified
+			{
+				if (flags[1] && precision == -1)
+				{
+					while (flags[2]-- - conv_str_len)
+						ft_putchar_fd('0', 1);
+				}
+				else
+					while (flags[2]-- - conv_str_len)
+						ft_putchar_fd(' ', 1);
+				ft_putstr_fd(converted_str, 1);
+			}
+		}
+		else // no padding
 		{
 			ft_putstr_fd(converted_str, 1);
-			if (pad_zeros > 0)
-				while(pad_zeros--)
-					ft_putchar_fd('0', 1);
-		}	
+			printed_bytes = conv_str_len;
+		}
 	}
-	else if (flags[0] && flags[2] > conv_str_len)
-	{
-		ft_putstr_fd(converted_str, 1);
-		while (flags[2]-- > conv_str_len)
-			ft_putchar_fd(' ', 1);
-	}
-	else
-		ft_putstr_fd(converted_str, 1);
-	return (pad_zeros + conv_str_len);
+	return (printed_bytes);
 }
 
 static int	print_conversion_hexa(unsigned int n, int *flags, char check_casing)
@@ -554,16 +591,10 @@ static int	print_conversion_hexa(unsigned int n, int *flags, char check_casing)
 
 static int	print_conversion(char conversion, va_list ap, int *flags)
 {
-	char	*tmp;
-
 	if (conversion == 'c')
 		return (print_conversion_c((unsigned char)va_arg(ap, int), flags));
 	else if (conversion == 's')
-	{
-		tmp = va_arg(ap, char *);
-		printf("In print_conversion: %s\n", tmp);
-		return (print_conversion_s(tmp, flags));
-	}
+		return (print_conversion_s(va_arg(ap, char *), flags));
 	else if (conversion == 'p')
 		return (print_conversion_p(va_arg(ap, void *), flags));
 	else if (conversion == 'd' || conversion == 'i')

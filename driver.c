@@ -3,6 +3,7 @@
 
 int main(void)
 {
-	ft_printf("%.*s", -3, 0);
+	ft_printf("%-5.0d\n", 0);
+	printf("%-5.0d\n", 0);
 	return (0);
 }
