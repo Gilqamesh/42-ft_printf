@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/29 17:27:24 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/29 20:21:32 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,10 +74,10 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 		flags[2] = flags[2] * 10 + c - '0';
 		c = conv_spec[++conv_spec_index];
 	}
-	if (c == '*')
+	if (c == '*') // This is not precision, this is field width
 	{
-		flags[3] = -1;
-		flags[4] = va_arg(ap, int);
+		flags[3] = -3;
+		flags[2] = va_arg(ap, int);
 		conv_spec_index++;
 	}
 	else if (c == '.')
@@ -107,9 +107,9 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 	}
 	else
 		flags[3] = -3; // no precision
-	// printf("flags: \n");
-	// for (int i = 0; i < 5; i++)
-	// 	printf("%d: %d\n", i, flags[i]);
+	printf("flags: \n");
+	for (int i = 0; i < 5; i++)
+		printf("%d: %d\n", i, flags[i]);
 	return (conv_spec_index);
 }
 
@@ -154,7 +154,7 @@ static int	print_conversion_s(char *str, int *flags)
 	str_len = ft_strlen(str);
 	if (precision > str_len && flags[3] != -1)
 		precision = str_len;
-
+	// printf("precision: %d\n", precision);
 	if (precision == -1) // no truncation
 	{
 		if (flags[2] > str_len) // padding

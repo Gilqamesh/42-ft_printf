@@ -3,7 +3,7 @@
 
 int main(void)
 {
-	ft_printf("%*s\n", 32, "abc");
-	printf("%-32s\n", "abc");
+	ft_printf("%-*.*s", 7, 3, "yolo");
+	printf("%-*.*s", 7, 3, "yolo");
 	return (0);
 }
