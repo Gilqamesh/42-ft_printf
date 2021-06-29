@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/29 13:36:04 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/29 14:11:21 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -332,14 +332,32 @@ static int	print_conversion_int(int n, int *flags)
 		}
 		else // not space padded, left justified by default
 		{
-			return 0;
+			printed_bytes = precision;
+			while (precision-- - conv_str_len)
+				ft_putchar_fd('0', 1);
+			ft_putstr_fd(converted_str, 1);
 		}
 	}
-	else if (0)
+	else // no 0 padding
 	{
-		return 0;
+		if (flags[2] > conv_str_len) // space padded
+		{
+			if (flags[0]) // left justified
+			{
+				/* cur prog */
+			}
+			else // right justified
+			{
+				
+			}
+		}
+		else // no padding
+		{
+			ft_putstr_fd(converted_str, 1);
+			printed_bytes = conv_str_len;
+		}
 	}
-	return 0;
+	return (printed_bytes);
 	// pad_zeros = 0;
 	// if (flags[0] && flags[1])
 	// 	pad_zeros = 0;
