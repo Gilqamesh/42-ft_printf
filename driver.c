@@ -3,9 +3,9 @@
 
 int main(void)
 {
-	int n = -123;
-	ft_printf("abc %x abc\n", n);
-	printf("abc %X abc\n", n);
+	ft_printf("%5s", "goes over");
+	printf("%5s", "goes over");
+	// getting timeout
 
 	return (0);
 }

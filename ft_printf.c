@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/28 21:05:56 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/29 12:10:21 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,12 +87,24 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 			conv_spec_index++;
 		}
 		else
-			while (ft_isdigit(c))
-			{
-				flags[3] = flags[3] * 10 + c - '0';
-				c = conv_spec[++conv_spec_index];
-			}
+		{
+			if (!ft_isdigit(c))
+				flags[3] = -3;
+			else if (c == '0')
+				flags[3] = -2;
+			else
+				while (ft_isdigit(c))
+				{
+					flags[3] = flags[3] * 10 + c - '0';
+					c = conv_spec[++conv_spec_index];
+				}
+		}
 	}
+	else
+		flags[3] = -3; // no precision
+	// printf("flags: \n");
+	// for (int i = 0; i < 5; i++)
+	// 	printf("%d: %d\n", i, flags[i]);
 	return (conv_spec_index);
 }
 
@@ -115,48 +127,105 @@ static int	print_conversion_s(char *str, int *flags)
 {
 	int	str_len;
 	int printed_bytes;
+	int	precision;
 
+	if (flags[3] == -2)			// 0 precision
+		precision = 0;
+	else if (flags[3] == -3) 	// no precision
+		precision = -1;
+	else if (flags[3] == -1) 	// read from *
+		precision = flags[4];
+	else						// has precision
+		precision = flags[3];
 	printed_bytes = 0;
 	str_len = ft_strlen(str);
-	if (flags[3])
+	if (precision > str_len)
+		precision = str_len;
+	// printf("in print_conversion_s: %s\n", str);
+	// if (flags[3] == -2)
+	// 	str_len = 0;
+	// else if (flags[3] == -1)
+	// {
+	// 	if (flags[4] < str_len)
+	// 		str_len = flags[4];
+	// }
+	// else
+	// {
+	// 	if (flags[3] < str_len)
+	// 		str_len = flags[3];
+	// }
+	// printf("in print_conversion_s, str_len: %d\n", str_len);
+	// printed_bytes = str_len;
+	// if (flags[2] > str_len && flags[2] < flags[3])
+	// {
+	// 	if (flags[0])
+	// 	{
+	// 		ft_putstr_fd(str, 1);
+	// 		while ((flags[2])-- > str_len)
+	// 			ft_putchar_fd(' ', 1);
+	// 	}
+	// 	else
+	// 	{
+	// 		while ((flags[2])-- > str_len)
+	// 			ft_putchar_fd(' ', 1);
+	// 		ft_putstr_fd(str, 1);
+	// 	}	
+	// }
+	// else
+	// 	while (str_len--)
+	// 		write(1, str++, 1);
+	// printf("precision: %d\n", precision);
+	if (flags[2] > ft_int_max(precision, 0)) // need to pad
 	{
-		if (flags[3] == -1)
+		if (precision != -1 && precision < str_len) // truncation
 		{
-			if (flags[4] < str_len)
-				str_len = flags[4];
+			printed_bytes = precision + flags[2] - str_len;
+			if (flags[0]) // left justified
+			{
+				while (precision--)
+					write(1, str++, 1);
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+			}
+			else // right justified
+			{
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+				while (precision--)
+					write(1, str++, 1);
+			}
 		}
-		else
+		else // no truncation
 		{
-			if (flags[3] < str_len)
-				str_len = flags[4];
+			printed_bytes = flags[2] - str_len;
+			if (flags[0]) // left justified
+			{
+				ft_putstr_fd(str, 1);
+				while (flags[2]-- - str_len)
+					ft_putchar_fd(' ', 1);
+			}
+			else // right justified
+			{
+				while (flags[2]-- - str_len)
+					ft_putchar_fd(' ', 1);
+				ft_putstr_fd(str, 1);
+			}
 		}
 	}
-	printed_bytes = str_len;
-	if (flags[2] > str_len)
+	else // dont need to pad
 	{
-		if (flags[0])
+		if (precision != -1 && precision < str_len) // truncation
 		{
-			while (*str && str_len)
-			{
+			printed_bytes = precision;
+			while (precision--)
 				write(1, str++, 1);
-				str_len--;
-			}
-			while (str_len--)
-				ft_putchar_fd(' ', 1);
 		}
-		else
+		else // no truncation
 		{
-			while ((flags[2])-- > str_len)
-				ft_putchar_fd(' ', 1);
-			while (*str && str_len)
-			{
-				write(1, str++, 1);
-				str_len--;
-			}
-		}	
+			printed_bytes = str_len;
+			ft_putstr_fd(str, 1);
+		}
 	}
-	else
-		ft_putstr_fd(str, 1);
 	return (printed_bytes);
 }
 
@@ -169,12 +238,14 @@ static void	print_ultoh(unsigned long n, char check_casing)
 		if (check_casing >= 'a' && check_casing <= 'z')
 			write(1, &hexa[n % 16], 1);
 		else
-			write(1, ft_toupper(&hexa[n % 16]));
-			// FIX THIS
+			write(1, &(char){ft_toupper(hexa[n % 16])}, 1);
 		return ;
 	}
 	print_ultoh(n / 16, check_casing);
-	write(1, &hexa[n % 16], 1);
+	if (check_casing >= 'a' && check_casing <= 'z')
+		write(1, &hexa[n % 16], 1);
+	else
+		write(1, &(char){ft_toupper(hexa[n % 16])}, 1);
 }
 
 static int	digits_in_hexa(unsigned long n)
@@ -202,7 +273,7 @@ static int	print_conversion_p(void *arg_pointer, int *flags)
 	if (flags[0])
 	{
 		write(1, "0x", 2);
-		print_ultoh((unsigned long)arg_pointer);
+		print_ultoh((unsigned long)arg_pointer, 's');
 		while ((flags[2])-- - (addr_len + 2) > 0)
 		{
 			ft_putchar_fd(' ', 1);
@@ -217,7 +288,7 @@ static int	print_conversion_p(void *arg_pointer, int *flags)
 			printed_spaces++;
 		}
 		write(1, "0x", 2);
-		print_ultoh((unsigned long)arg_pointer);
+		print_ultoh((unsigned long)arg_pointer, 's');
 	}
 	return (addr_len + printed_spaces + 2);
 }

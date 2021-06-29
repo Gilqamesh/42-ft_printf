@@ -6,7 +6,7 @@
 #    By: edavid <edavid@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2021/06/25 20:47:25 by edavid            #+#    #+#              #
-#    Updated: 2021/06/28 16:09:03 by edavid           ###   ########.fr        #
+#    Updated: 2021/06/29 10:39:08 by edavid           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,7 +17,10 @@ NAME = libftprintf.a
 libftPath = ./libft/libft.h
 
 $(NAME) : $(objects)
-	ar rcs $@ $^
+	cd libft && $(MAKE) all
+	cp $(libftPath:.h=.a) .
+	mv libft.a $(NAME)
+	ar -rs $(NAME) $^
 
 ft_printf.o : $(libftPath) ft_printf.h
 
@@ -29,10 +32,11 @@ re :
 	make clean
 	make all
 bonus :
-
 test : $(objects) driver.o
 	cd libft && $(MAKE) all
 	cp $(libftPath:.h=.a) .
 	mv libft.a $(NAME)
 	ar -rs $(NAME) $(objects) driver.o
 	$(CC) -o test.out $^ -Llibft -lft
+clean :
+	rm -f *.o libft/*.o
