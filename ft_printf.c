@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/29 12:40:50 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/29 13:07:21 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,14 +90,16 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 		{
 			if (!ft_isdigit(c)) // 0 precision
 				flags[3] = -2;
-			else if (c == '0')
-				flags[3] = -2;
 			else
+			{
 				while (ft_isdigit(c))
 				{
 					flags[3] = flags[3] * 10 + c - '0';
 					c = conv_spec[++conv_spec_index];
 				}
+				if (flags[3] == 0)
+					flags[3] = -2;
+			}
 		}
 	}
 	else
@@ -133,7 +135,10 @@ static int	print_conversion_s(char *str, int *flags)
 
 	is_null = 0;
 	if (!str)
+	{
 		is_null = 1;
+		str = "(null)";
+	}
 	if (flags[3] == -2)			// 0 precision
 		precision = 0;
 	else if (flags[3] == -3) 	// no precision
@@ -143,9 +148,7 @@ static int	print_conversion_s(char *str, int *flags)
 	else						// has precision
 		precision = flags[3];
 	printed_bytes = 0;
-	if (!is_null)
-		str_len = ft_strlen(str);
-	str_len = 0;
+	str_len = ft_strlen(str);
 	if (precision > str_len)
 		precision = str_len;
 	// printf("in print_conversion_s: %s\n", str);
@@ -188,13 +191,7 @@ static int	print_conversion_s(char *str, int *flags)
 		{
 			if (flags[0]) // left justified
 			{
-				if (is_null)
-				{
-					printed_bytes = 6;
-					write(1, "(null)", 6);
-				}
-				else
-					ft_putstr_fd(str, 1);
+				ft_putstr_fd(str, 1);
 				while (flags[2]-- - str_len)
 					ft_putchar_fd(' ', 1);
 			}
@@ -202,25 +199,11 @@ static int	print_conversion_s(char *str, int *flags)
 			{
 				while (flags[2]-- - str_len)
 					ft_putchar_fd(' ', 1);
-				if (is_null)
-				{
-					printed_bytes = 6;
-					write(1, "(null)", 6);
-				}
-				else
-					ft_putstr_fd(str, 1);
+				ft_putstr_fd(str, 1);
 			}
 		}
 		else // no padding
-		{
-			if (is_null)
-			{
-				printed_bytes = 6;
-				write(1, "(null)", 6);
-			}
-			else
-				ft_putstr_fd(str, 1);
-		}
+			ft_putstr_fd(str, 1);
 	}
 	else if (flags[2] > precision) // need to pad
 	{
@@ -230,14 +213,8 @@ static int	print_conversion_s(char *str, int *flags)
 			if (flags[0]) // left justified
 			{
 				i = -1;
-				if (is_null)
-				{
-					printed_bytes = 6;
-					write(1, "(null)", 6);
-				}
-				else
-					while (++i < precision)
-						write(1, str++, 1);
+				while (++i < precision)
+					write(1, str++, 1);
 				while (flags[2]-- - precision)
 					ft_putchar_fd(' ', 1);
 			}
@@ -245,14 +222,8 @@ static int	print_conversion_s(char *str, int *flags)
 			{
 				while (flags[2]-- - precision)
 					ft_putchar_fd(' ', 1);
-				if (is_null)
-				{
-					printed_bytes = 6;
-					write(1, "(null)", 6);
-				}
-				else
-					while (precision--)
-						write(1, str++, 1);
+				while (precision--)
+					write(1, str++, 1);
 			}
 		}
 		else // no truncation
@@ -260,13 +231,7 @@ static int	print_conversion_s(char *str, int *flags)
 			printed_bytes = flags[2] - str_len;
 			if (flags[0]) // left justified
 			{
-				if (is_null)
-				{
-					printed_bytes = 6;
-					write(1, "(null)", 6);
-				}
-				else
-					ft_putstr_fd(str, 1);
+				ft_putstr_fd(str, 1);
 				while (flags[2]-- - str_len)
 					ft_putchar_fd(' ', 1);
 			}
@@ -274,13 +239,7 @@ static int	print_conversion_s(char *str, int *flags)
 			{
 				while (flags[2]-- - str_len)
 					ft_putchar_fd(' ', 1);
-				if (is_null)
-				{
-					printed_bytes = 6;
-					write(1, "(null)", 6);
-				}
-				else
-					ft_putstr_fd(str, 1);
+				ft_putstr_fd(str, 1);
 			}
 		}
 	}
@@ -289,25 +248,13 @@ static int	print_conversion_s(char *str, int *flags)
 		if (precision < str_len) // truncation
 		{
 			printed_bytes = precision;
-			if (is_null)
-			{
-				printed_bytes = 6;
-				write(1, "(null)", 6);
-			}
-			else
-				while (precision--)
-					write(1, str++, 1);
+			while (precision--)
+				write(1, str++, 1);
 		}
 		else // no truncation
 		{
 			printed_bytes = str_len;
-			if (is_null)
-			{
-				printed_bytes = 6;
-				write(1, "(null)", 6);
-			}
-			else
-				ft_putstr_fd(str, 1);
+			ft_putstr_fd(str, 1);
 		}
 	}
 	return (printed_bytes);
