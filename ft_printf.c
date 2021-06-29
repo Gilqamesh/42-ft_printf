@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/29 13:07:21 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/29 13:36:04 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,40 +151,6 @@ static int	print_conversion_s(char *str, int *flags)
 	str_len = ft_strlen(str);
 	if (precision > str_len)
 		precision = str_len;
-	// printf("in print_conversion_s: %s\n", str);
-	// if (flags[3] == -2)
-	// 	str_len = 0;
-	// else if (flags[3] == -1)
-	// {
-	// 	if (flags[4] < str_len)
-	// 		str_len = flags[4];
-	// }
-	// else
-	// {
-	// 	if (flags[3] < str_len)
-	// 		str_len = flags[3];
-	// }
-	// printf("in print_conversion_s, str_len: %d\n", str_len);
-	// printed_bytes = str_len;
-	// if (flags[2] > str_len && flags[2] < flags[3])
-	// {
-	// 	if (flags[0])
-	// 	{
-	// 		ft_putstr_fd(str, 1);
-	// 		while ((flags[2])-- > str_len)
-	// 			ft_putchar_fd(' ', 1);
-	// 	}
-	// 	else
-	// 	{
-	// 		while ((flags[2])-- > str_len)
-	// 			ft_putchar_fd(' ', 1);
-	// 		ft_putstr_fd(str, 1);
-	// 	}	
-	// }
-	// else
-	// 	while (str_len--)
-	// 		write(1, str++, 1);
-	// printf("precision: %d\n", precision);
 	if (precision == -1) // no truncation
 	{
 		if (flags[2] > str_len) // padding
@@ -328,41 +294,83 @@ static int	print_conversion_int(int n, int *flags)
 {
 	char	*converted_str;
 	char	conv_str_len;
-	int		pad_zeros;
+	int		precision;
+	int		printed_bytes;
 
+	if (flags[3] == -2 && !n)	// if 0 precision and n is 0
+		return (0);
+	else if (flags[3] == -3)	// no precision
+		precision = -1;
+	else if (flags[3] == -1) 	// read from *
+		precision = flags[4];
+	else						// has precision
+		precision = flags[3];
 	converted_str = ft_itoa(n);
 	conv_str_len = ft_strlen(converted_str);
-	pad_zeros = 0;
-	if (flags[0] && flags[1])
-		pad_zeros = 0;
-	if (flags[3])
-		pad_zeros = ft_int_max(flags[3], flags[4]) - conv_str_len;
-	if (pad_zeros)
+
+	if (precision > conv_str_len) // pad precision - conv_str_len 0s
 	{
-		if (flags[0])
+		if (flags[2] > precision) // space padded by flags[2] - precision
 		{
-			if (pad_zeros > 0)
-				while(pad_zeros--)
+			printed_bytes = flags[2];
+			if (flags[0]) // left justified
+			{
+				while (precision - conv_str_len++)
 					ft_putchar_fd('0', 1);
-			ft_putstr_fd(converted_str, 1);
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+				ft_putstr_fd(converted_str, 1);
+			}
+			else // right justified
+			{
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+				while (precision-- - conv_str_len)
+					ft_putchar_fd('0', 1);
+				ft_putstr_fd(converted_str, 1);
+			}
 		}
-		else
+		else // not space padded, left justified by default
 		{
-			ft_putstr_fd(converted_str, 1);
-			if (pad_zeros > 0)
-				while(pad_zeros--)
-					ft_putchar_fd('0', 1);
-		}	
+			return 0;
+		}
 	}
-	else if (flags[0] && flags[2] > conv_str_len)
+	else if (0)
 	{
-		ft_putstr_fd(converted_str, 1);
-		while (flags[2]-- > conv_str_len)
-			ft_putchar_fd(' ', 1);
+		return 0;
 	}
-	else
-		ft_putstr_fd(converted_str, 1);
-	return (pad_zeros + conv_str_len);
+	return 0;
+	// pad_zeros = 0;
+	// if (flags[0] && flags[1])
+	// 	pad_zeros = 0;
+	// if (flags[3])
+	// 	pad_zeros = ft_int_max(flags[3], flags[4]) - conv_str_len;
+	// if (pad_zeros)
+	// {
+	// 	if (flags[0])
+	// 	{
+	// 		if (pad_zeros > 0)
+	// 			while(pad_zeros--)
+	// 				ft_putchar_fd('0', 1);
+	// 		ft_putstr_fd(converted_str, 1);
+	// 	}
+	// 	else
+	// 	{
+	// 		ft_putstr_fd(converted_str, 1);
+	// 		if (pad_zeros > 0)
+	// 			while(pad_zeros--)
+	// 				ft_putchar_fd('0', 1);
+	// 	}	
+	// }
+	// else if (flags[0] && flags[2] > conv_str_len)
+	// {
+	// 	ft_putstr_fd(converted_str, 1);
+	// 	while (flags[2]-- > conv_str_len)
+	// 		ft_putchar_fd(' ', 1);
+	// }
+	// else
+	// 	ft_putstr_fd(converted_str, 1);
+	// return (pad_zeros + conv_str_len);
 }
 
 
