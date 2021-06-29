@@ -3,8 +3,6 @@
 
 int main(void)
 {
-	ft_printf("%10.6d\n", 82);
-	printf("%10.6d\n", 82);
-
+	ft_printf("%.*s", -3, 0);
 	return (0);
 }

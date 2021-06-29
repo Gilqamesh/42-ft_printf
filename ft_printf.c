@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/29 14:11:21 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/29 15:46:01 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,9 +133,11 @@ static int	print_conversion_s(char *str, int *flags)
 	int	i;
 	int is_null;
 
+	printf("in print_conversion_s: %s\n", str);
 	is_null = 0;
 	if (!str)
 	{
+		printf("saddasdasdsadasdasdas"); 
 		is_null = 1;
 		str = "(null)";
 	}
@@ -290,12 +292,26 @@ static int	print_conversion_p(void *arg_pointer, int *flags)
 	return (addr_len + printed_spaces + 2);
 }
 
+static void	remove_negative(char **str)
+{
+	int		str_len;
+	char	*trunc_str;
+
+	if (!str || !*str)
+		return ;
+	str_len = ft_strlen(*str);
+	trunc_str = ft_strdup(*str + 1);
+	free(*str);
+	*str = trunc_str;
+}
+
 static int	print_conversion_int(int n, int *flags)
 {
 	char	*converted_str;
 	char	conv_str_len;
 	int		precision;
 	int		printed_bytes;
+	int		is_negative;
 
 	if (flags[3] == -2 && !n)	// if 0 precision and n is 0
 		return (0);
@@ -305,7 +321,12 @@ static int	print_conversion_int(int n, int *flags)
 		precision = flags[4];
 	else						// has precision
 		precision = flags[3];
+	is_negative = 0;
+	if (n < 0)
+		is_negative = 1;
 	converted_str = ft_itoa(n);
+	if (is_negative)
+		remove_negative(&converted_str);
 	conv_str_len = ft_strlen(converted_str);
 
 	if (precision > conv_str_len) // pad precision - conv_str_len 0s
@@ -315,16 +336,20 @@ static int	print_conversion_int(int n, int *flags)
 			printed_bytes = flags[2];
 			if (flags[0]) // left justified
 			{
+				if (is_negative)
+					ft_putchar_fd('-', 1);
 				while (precision - conv_str_len++)
 					ft_putchar_fd('0', 1);
-				while (flags[2]-- - precision)
-					ft_putchar_fd(' ', 1);
 				ft_putstr_fd(converted_str, 1);
+				while (flags[2]-- - precision - is_negative)
+					ft_putchar_fd(' ', 1);
 			}
 			else // right justified
 			{
-				while (flags[2]-- - precision)
+				while (flags[2]-- - precision - is_negative)
 					ft_putchar_fd(' ', 1);
+				if (is_negative)
+					ft_putchar_fd('-', 1);
 				while (precision-- - conv_str_len)
 					ft_putchar_fd('0', 1);
 				ft_putstr_fd(converted_str, 1);
@@ -333,6 +358,8 @@ static int	print_conversion_int(int n, int *flags)
 		else // not space padded, left justified by default
 		{
 			printed_bytes = precision;
+			if (is_negative)
+				ft_putchar_fd('-', 1);
 			while (precision-- - conv_str_len)
 				ft_putchar_fd('0', 1);
 			ft_putstr_fd(converted_str, 1);
@@ -342,17 +369,28 @@ static int	print_conversion_int(int n, int *flags)
 	{
 		if (flags[2] > conv_str_len) // space padded
 		{
+			printed_bytes = flags[2];
 			if (flags[0]) // left justified
 			{
-				/* cur prog */
+				if (is_negative)
+					ft_putchar_fd('-', 1);
+				ft_putstr_fd(converted_str, 1);
+				while (flags[2]-- - conv_str_len - is_negative)
+					ft_putchar_fd(' ', 1);
 			}
 			else // right justified
 			{
-				
+				while (flags[2]-- - conv_str_len - is_negative)
+					ft_putchar_fd(' ', 1);
+				if (is_negative)
+					ft_putchar_fd('-', 1);
+				ft_putstr_fd(converted_str, 1);
 			}
 		}
 		else // no padding
 		{
+			if (is_negative)
+				ft_putchar_fd('-', 1);
 			ft_putstr_fd(converted_str, 1);
 			printed_bytes = conv_str_len;
 		}
@@ -516,10 +554,16 @@ static int	print_conversion_hexa(unsigned int n, int *flags, char check_casing)
 
 static int	print_conversion(char conversion, va_list ap, int *flags)
 {
+	char	*tmp;
+
 	if (conversion == 'c')
 		return (print_conversion_c((unsigned char)va_arg(ap, int), flags));
 	else if (conversion == 's')
-		return (print_conversion_s(va_arg(ap, char *), flags));
+	{
+		tmp = va_arg(ap, char *);
+		printf("In print_conversion: %s\n", tmp);
+		return (print_conversion_s(tmp, flags));
+	}
 	else if (conversion == 'p')
 		return (print_conversion_p(va_arg(ap, void *), flags));
 	else if (conversion == 'd' || conversion == 'i')
