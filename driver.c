@@ -3,7 +3,7 @@
 
 int main(void)
 {
-	ft_printf("%-5.0d\n", 0);
-	printf("%-5.0d\n", 0);
+	ft_printf("%*s\n", 32, "abc");
+	printf("%-32s\n", "abc");
 	return (0);
 }

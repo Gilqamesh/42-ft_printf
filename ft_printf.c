@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/29 16:40:50 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/29 17:27:24 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,13 +16,6 @@
 #include "./libft/libft.h"
 #include <stdio.h>
 #include <limits.h>
-
-static int	ft_int_max(int a, int b)
-{
-	if (a > b)
-		return (a);
-	return (b);
-}
 
 static char	*malloc_conv_spec(char *format, int *format_index)
 {
@@ -35,7 +28,11 @@ static char	*malloc_conv_spec(char *format, int *format_index)
 		index++;
 	while (ft_isdigit(format[index]))
 		index++;
-	if (format[index] == '.')
+	if (format[index] == '*')
+	{
+		index++;
+	}
+	else if (format[index] == '.')
 	{
 		index++;
 		if (format[index] == '*')
@@ -77,7 +74,13 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 		flags[2] = flags[2] * 10 + c - '0';
 		c = conv_spec[++conv_spec_index];
 	}
-	if (c == '.')
+	if (c == '*')
+	{
+		flags[3] = -1;
+		flags[4] = va_arg(ap, int);
+		conv_spec_index++;
+	}
+	else if (c == '.')
 	{
 		c = conv_spec[++conv_spec_index];
 		if (c == '*')
@@ -149,8 +152,9 @@ static int	print_conversion_s(char *str, int *flags)
 		precision = flags[3];
 	printed_bytes = 0;
 	str_len = ft_strlen(str);
-	if (precision > str_len)
+	if (precision > str_len && flags[3] != -1)
 		precision = str_len;
+
 	if (precision == -1) // no truncation
 	{
 		if (flags[2] > str_len) // padding
@@ -209,7 +213,7 @@ static int	print_conversion_s(char *str, int *flags)
 			}
 		}
 	}
-	else // dont need to pad
+	else 
 	{
 		if (precision < str_len) // truncation
 		{
@@ -217,10 +221,21 @@ static int	print_conversion_s(char *str, int *flags)
 			while (precision--)
 				write(1, str++, 1);
 		}
-		else // no truncation
+		else // pad precision - str_len spaces
 		{
-			printed_bytes = str_len;
-			ft_putstr_fd(str, 1);
+			printed_bytes = precision;
+			if (flags[0]) // left justified
+			{
+				ft_putstr_fd(str, 1);
+				while (precision-- - str_len)
+					ft_putchar_fd(' ', 1);
+			}
+			else
+			{
+				while (precision-- - str_len)
+					ft_putchar_fd(' ', 1);
+				ft_putstr_fd(str, 1);
+			}
 		}
 	}
 	return (printed_bytes);
@@ -417,7 +432,6 @@ static int	print_conversion_int(int n, int *flags)
 	return (printed_bytes);
 }
 
-
 static char	*ft_initstr(char **str, int len, int is_zero)
 {
 	*str = (char *)malloc(len + 1);
@@ -456,6 +470,26 @@ static char	*ft_utoa(unsigned int n)
 	{
 		*(str + --len) = n % 10 + '0';
 		n /= 10;
+	}
+	return (str);
+}
+
+static char	*ft_utox(unsigned int n, char check_casing)
+{
+	int		len;
+	char	*str;
+	static char	hexa[] = "0123456789abcdef";
+
+	len = digits_in_hexa(n);
+	if (!ft_initstr(&str, len, !n))
+		return ((char *)0);
+	while (n)
+	{
+		if (check_casing >= 'a' && check_casing <= 'z')
+			*(str + --len) = hexa[n % 16];
+		else
+			*(str + --len) = ft_toupper(hexa[n % 16]);
+		n /= 16;
 	}
 	return (str);
 }
@@ -552,41 +586,178 @@ static int	print_conversion_uint(unsigned int n, int *flags)
 
 static int	print_conversion_hexa(unsigned int n, int *flags, char check_casing)
 {
-	int	n_digits_in_h;
-	int	pad_zeros;
+	char	*converted_str;
+	char	conv_str_len;
+	int		precision;
+	int		printed_bytes;
 
-	n_digits_in_h = digits_in_hexa(n);
-	pad_zeros = 0;
-	if (flags[0] && flags[1])
-		pad_zeros = 0;
-	if (flags[3])
-		pad_zeros = ft_int_max(flags[3], flags[4]) - n_digits_in_h;
-	if (pad_zeros)
+	if (flags[3] == -3)	// no precision
+		precision = -1;
+	else if (flags[3] == -1) 	// read from *
+		precision = flags[4];
+	else						// has precision
+		precision = flags[3];
+	converted_str = ft_utox(n, check_casing);
+	if (flags[3] == -2 && !n)	// if 0 precision and n is 0
+		shift_str(&converted_str);
+	conv_str_len = ft_strlen(converted_str);
+
+	if (precision > conv_str_len) // pad precision - conv_str_len 0s
 	{
-		if (flags[0])
+		if (flags[2] > precision) // space padded by flags[2] - precision
 		{
-			if (pad_zeros > 0)
-				while(pad_zeros--)
+			printed_bytes = flags[2];
+			if (flags[0]) // left justified
+			{
+				while (precision - conv_str_len++)
 					ft_putchar_fd('0', 1);
-			print_ultoh(n, check_casing);
+				ft_putstr_fd(converted_str, 1);
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+			}
+			else // right justified
+			{
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+				while (precision-- - conv_str_len)
+					ft_putchar_fd('0', 1);
+				ft_putstr_fd(converted_str, 1);
+			}
 		}
-		else
+		else // not space padded, left justified by default
 		{
-			print_ultoh(n, check_casing);
-			if (pad_zeros > 0)
-				while(pad_zeros--)
-					ft_putchar_fd('0', 1);
-		}	
+			printed_bytes = precision;
+			while (precision-- - conv_str_len)
+				ft_putchar_fd('0', 1);
+			ft_putstr_fd(converted_str, 1);
+		}
 	}
-	else if (flags[0] && flags[2] > n_digits_in_h)
+	else // precision less than or equal to str_len
 	{
-		print_ultoh(n, check_casing);
-		while (flags[2]-- > n_digits_in_h)
-			ft_putchar_fd(' ', 1);
+		if (flags[2] > conv_str_len) // padded
+		{
+			printed_bytes = flags[2];
+			if (flags[0])
+			{
+				if (flags[1] && precision == -1) // 0 padded instead of space
+				{
+					while (flags[2]-- - conv_str_len)
+						ft_putchar_fd('0', 1);
+					ft_putstr_fd(converted_str, 1);
+				}
+				else
+				{
+					ft_putstr_fd(converted_str, 1);
+					while (flags[2]-- - conv_str_len)
+						ft_putchar_fd(' ', 1);
+				}
+			}
+			else // right justified
+			{
+				if (flags[1] && precision == -1)
+				{
+					while (flags[2]-- - conv_str_len)
+						ft_putchar_fd('0', 1);
+				}
+				else
+					while (flags[2]-- - conv_str_len)
+						ft_putchar_fd(' ', 1);
+				ft_putstr_fd(converted_str, 1);
+			}
+		}
+		else // no padding
+		{
+			ft_putstr_fd(converted_str, 1);
+			printed_bytes = conv_str_len;
+		}
 	}
-	else
-		print_ultoh(n, check_casing);
-	return (n_digits_in_h + pad_zeros);
+	return (printed_bytes);
+}
+
+static int	print_conversion_perc(int *flags)
+{
+	int		precision;
+	int		printed_bytes;
+	int		i;
+
+	if (flags[3] == -3)	// no precision
+		precision = -1;
+	else if (flags[3] == -1) 	// read from *
+		precision = flags[4];
+	else						// has precision
+		precision = flags[3];
+	if (precision > 1) // pad precision - conv_str_len 0s
+	{
+		if (flags[2] > precision) // space padded by flags[2] - precision
+		{
+			printed_bytes = flags[2];
+			if (flags[0]) // left justified
+			{
+				i = 1;
+				while (precision - i++)
+					ft_putchar_fd('0', 1);
+				ft_putchar_fd('%', 1);
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+			}
+			else // right justified
+			{
+				while (flags[2]-- - precision)
+					ft_putchar_fd(' ', 1);
+				i = 1;
+				while (precision-- - i++)
+					ft_putchar_fd('0', 1);
+				ft_putchar_fd('%', 1);
+			}
+		}
+		else // not space padded, left justified by default
+		{
+			printed_bytes = precision;
+			while (precision-- - 1)
+				ft_putchar_fd('0', 1);
+				ft_putchar_fd('%', 1);
+		}
+	}
+	else // precision less than or equal to str_len
+	{
+		if (flags[2] > 1) // padded
+		{
+			printed_bytes = flags[2];
+			if (flags[0])
+			{
+				if (flags[1] && precision == -1) // 0 padded instead of space
+				{
+					while (flags[2]-- - 1)
+						ft_putchar_fd('0', 1);
+				ft_putchar_fd('%', 1);
+				}
+				else
+				{
+				ft_putchar_fd('%', 1);
+					while (flags[2]-- - 1)
+						ft_putchar_fd(' ', 1);
+				}
+			}
+			else // right justified
+			{
+				if (flags[1] && precision == -1)
+				{
+					while (flags[2]-- - 1)
+						ft_putchar_fd('0', 1);
+				}
+				else
+					while (flags[2]-- - 1)
+						ft_putchar_fd(' ', 1);
+				ft_putchar_fd('%', 1);
+			}
+		}
+		else // no padding
+		{
+				ft_putchar_fd('%', 1);
+			printed_bytes = 1;
+		}
+	}
+	return (printed_bytes);
 }
 
 static int	print_conversion(char conversion, va_list ap, int *flags)
@@ -603,6 +774,8 @@ static int	print_conversion(char conversion, va_list ap, int *flags)
 		return (print_conversion_uint((unsigned int)va_arg(ap, int), flags));
 	else if (conversion == 'x' || conversion == 'X')
 		return (print_conversion_hexa((unsigned int)va_arg(ap, int), flags, conversion));
+	else if (conversion == '%')
+		return (print_conversion_perc(flags));
 	else
 		return (-1);
 }
@@ -729,12 +902,6 @@ int	ft_printf(const char *format, ...)
 	{
 		if (format[format_index] == '%') // start of conversion specification
 		{
-			if (format[format_index + 1] == '%')
-			{
-				write(1, "%", 1);
-				format_index++;
-				continue ;
-			}
 			format_index++;
 			/*
 				store conversion specifier in a str and advance the 
