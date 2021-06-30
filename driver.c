@@ -3,7 +3,9 @@
 
 int main(void)
 {
-	ft_printf("%0*i\n", -7, -54);
-	printf("%0*i\n", -7, -54);
+	int a = 2;
+	int *tmp = &a;
+	ft_printf("%2.3p\n", tmp);
+	printf("%2.3p\n", tmp);
 	return (0);
 }

@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/30 12:33:59 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/30 16:01:28 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,12 @@ static char	*malloc_conv_spec(char *format, int *format_index)
 	int		format_len;
 	char	*conversion_specifier; 
 
+	if (!*format)
+	{
+		conversion_specifier = malloc(1);
+		*conversion_specifier = '\0';
+		return (conversion_specifier);
+	}
 	index = 0;
 	while (format[index] == '-' || format[index] == '0')
 		index++;
@@ -82,6 +88,7 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 		{
 			flags[2] *= -1;
 			flags[0] = 1;
+			flags[1] = 0;
 		}
 		c = conv_spec[++conv_spec_index];
 	}
@@ -93,10 +100,9 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 			flags[3] = -1;
 			flags[4] = va_arg(ap, int);
 			if (flags[4] < 0)
-			{
 				flags[3] = -3;
-				flags[0] = 0
-			}
+			else if (flags[4] == 0)
+				flags[3] = -2;
 			conv_spec_index++;
 		}
 		else
@@ -127,14 +133,27 @@ static int	print_conversion_c(unsigned char c, int *flags)
 {
 	int	printed_bytes;
 
-	printed_bytes = 1;
-	if (!flags[0] && flags[2])
+	if (--flags[2] > 0) // pad with spaces
 	{
-		printed_bytes += flags[2];
-		while (--(flags[2]) > 0)
-			ft_putchar_fd(' ', 1);
+		printed_bytes = flags[2] + 1;
+		if (flags[0]) // left justified
+		{
+			write(1, &c, 1);
+			while (flags[2]--)
+				ft_putchar_fd(' ', 1);	
+		}
+		else // right justified
+		{
+			while (flags[2]--)
+				ft_putchar_fd(' ', 1);	
+			write(1, &c, 1);
+		}
 	}
-	write(1, &c, 1);
+	else
+	{
+		printed_bytes = 1;
+		write(1, &c, 1);
+	}
 	return (printed_bytes);
 }
 
@@ -169,6 +188,7 @@ static int	print_conversion_s(char *str, int *flags)
 	{
 		if (flags[2] > str_len) // padding
 		{
+			printed_bytes = flags[2];
 			if (flags[0]) // left justified
 			{
 				ft_putstr_fd(str, 1);
@@ -183,13 +203,16 @@ static int	print_conversion_s(char *str, int *flags)
 			}
 		}
 		else // no padding
+		{
+			printed_bytes = str_len;	
 			ft_putstr_fd(str, 1);
+		}
 	}
 	else if (flags[2] > precision) // need to pad
 	{
 		if (precision < str_len) // truncation
 		{
-			printed_bytes = precision + flags[2] - str_len;
+			printed_bytes = flags[2];
 			if (flags[0]) // left justified
 			{
 				i = -1;
@@ -208,7 +231,7 @@ static int	print_conversion_s(char *str, int *flags)
 		}
 		else // no truncation
 		{
-			printed_bytes = flags[2] - str_len;
+			printed_bytes = flags[2];
 			if (flags[0]) // left justified
 			{
 				ft_putstr_fd(str, 1);
@@ -223,6 +246,22 @@ static int	print_conversion_s(char *str, int *flags)
 			}
 		}
 	}
+	else if (flags[2] > str_len) // need to pad with spaces
+	{
+		printed_bytes = flags[2];
+		if (flags[0]) // left justified
+		{
+			ft_putstr_fd(str, 1);
+			while (flags[2]-- - str_len)
+				ft_putchar_fd(' ', 1);
+		}
+		else
+		{
+			while (flags[2]-- - str_len)
+				ft_putchar_fd(' ', 1);
+			ft_putstr_fd(str, 1);
+		}
+	}
 	else 
 	{
 		if (precision < str_len) // truncation
@@ -231,21 +270,10 @@ static int	print_conversion_s(char *str, int *flags)
 			while (precision--)
 				write(1, str++, 1);
 		}
-		else // pad precision - str_len spaces
+		else
 		{
-			printed_bytes = precision;
-			if (flags[0]) // left justified
-			{
-				ft_putstr_fd(str, 1);
-				while (precision-- - str_len)
-					ft_putchar_fd(' ', 1);
-			}
-			else
-			{
-				while (precision-- - str_len)
-					ft_putchar_fd(' ', 1);
-				ft_putstr_fd(str, 1);
-			}
+			printed_bytes = str_len;
+			ft_putstr_fd(str, 1);
 		}
 	}
 	return (printed_bytes);
@@ -323,7 +351,13 @@ static void	shift_str(char **str)
 	if (!str || !*str)
 		return ;
 	str_len = ft_strlen(*str);
-	trunc_str = ft_strdup(*str + 1);
+	if (str_len < 2)
+	{
+		trunc_str = malloc(1);
+		*trunc_str = '\0';
+	}
+	else
+		trunc_str = ft_strdup(*str + 1);
 	free(*str);
 	*str = trunc_str;
 }
@@ -351,6 +385,8 @@ static int	print_conversion_int(int n, int *flags)
 	if (flags[3] == -2 && !n)	// if 0 precision and n is 0
 		shift_str(&converted_str);
 	conv_str_len = ft_strlen(converted_str);
+
+	// printf("In print_conversion_int, n: %d conv_str: %s\n", n, converted_str);
 
 	if (precision > conv_str_len) // pad precision - conv_str_len 0s
 	{
@@ -380,7 +416,7 @@ static int	print_conversion_int(int n, int *flags)
 		}
 		else // not space padded, left justified by default
 		{
-			printed_bytes = precision;
+			printed_bytes = precision + is_negative;
 			if (is_negative)
 				ft_putchar_fd('-', 1);
 			while (precision-- - conv_str_len)
@@ -393,7 +429,7 @@ static int	print_conversion_int(int n, int *flags)
 		if (flags[2] > conv_str_len) // padded
 		{
 			printed_bytes = flags[2];
-			if (flags[0])
+			if (flags[0]) // left justified
 			{
 				if (flags[1] && precision == -1) // 0 padded instead of space
 				{
@@ -433,10 +469,10 @@ static int	print_conversion_int(int n, int *flags)
 		}
 		else // no padding
 		{
+			printed_bytes = conv_str_len + is_negative;
 			if (is_negative)
 				ft_putchar_fd('-', 1);
 			ft_putstr_fd(converted_str, 1);
-			printed_bytes = conv_str_len;
 		}
 	}
 	return (printed_bytes);
@@ -898,6 +934,33 @@ static int	handle_conversion_spec(char *conv_spec, va_list ap)
 	return (printed_bytes);
 }
 
+static int	is_valid_conv_spec(char *conv_spec)
+{
+	if (*conv_spec == '%')
+		return (1);
+	while (*conv_spec == '-' || *conv_spec == '0')
+		conv_spec++;
+	while (ft_isdigit(*conv_spec))
+		conv_spec++;
+	if (*conv_spec == '*')
+		conv_spec++;
+	if (*conv_spec == '.')
+	{
+		conv_spec++;
+		if (*conv_spec == '*')
+			conv_spec++;
+		else
+			while (ft_isdigit(*conv_spec))
+				conv_spec++;
+	}
+	if (*conv_spec == '\0' || (*conv_spec != 'c' && *conv_spec != 's' &&
+	*conv_spec != 'p' && *conv_spec != 'd' && *conv_spec != 'i' &&
+	*conv_spec != 'u' && *conv_spec != 'x' && *conv_spec != 'X' &&
+	*conv_spec != '%'))
+		return (0);
+	return (1);
+}
+
 int	ft_printf(const char *format, ...)
 {
 	va_list	ap;
@@ -913,6 +976,10 @@ int	ft_printf(const char *format, ...)
 		if (format[format_index] == '%') // start of conversion specification
 		{
 			format_index++;
+			// if conversion_specifier is wrong, do something, for now keep reading until there is format
+			// as a side effect is also increments format_index
+			if (!is_valid_conv_spec((char *)format + format_index))
+				continue ;
 			/*
 				store conversion specifier in a str and advance the 
 				format_index by that much. Advance ap with va_arg as a type of
@@ -932,6 +999,7 @@ int	ft_printf(const char *format, ...)
 
 			// function that handles the format specifier string
 			n_of_printed += handle_conversion_spec(conversion_specifier, ap);
+			free(conversion_specifier);
 		}
 		else
 		{
