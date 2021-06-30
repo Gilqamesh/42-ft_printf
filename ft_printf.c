@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/30 16:01:28 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/30 17:16:19 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,7 +125,7 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 		flags[3] = -3; // no precision
 	// printf("flags: \n");
 	// for (int i = 0; i < 5; i++)
-	// 	printf("%d: %d\n", i, flags[i]);
+	// printf("%d: %d\n", i, flags[i]);
 	return (conv_spec_index);
 }
 
@@ -365,7 +365,7 @@ static void	shift_str(char **str)
 static int	print_conversion_int(int n, int *flags)
 {
 	char	*converted_str;
-	char	conv_str_len;
+	int		conv_str_len;
 	int		precision;
 	int		printed_bytes;
 	int		is_negative;
@@ -387,6 +387,7 @@ static int	print_conversion_int(int n, int *flags)
 	conv_str_len = ft_strlen(converted_str);
 
 	// printf("In print_conversion_int, n: %d conv_str: %s\n", n, converted_str);
+	// printf("Converted string len: %d\n", conv_str_len);
 
 	if (precision > conv_str_len) // pad precision - conv_str_len 0s
 	{
@@ -724,7 +725,6 @@ static int	print_conversion_perc(int *flags)
 {
 	int		precision;
 	int		printed_bytes;
-	int		i;
 
 	if (flags[3] == -3)	// no precision
 		precision = -1;
@@ -739,29 +739,23 @@ static int	print_conversion_perc(int *flags)
 			printed_bytes = flags[2];
 			if (flags[0]) // left justified
 			{
-				i = 1;
-				while (precision - i++)
-					ft_putchar_fd('0', 1);
 				ft_putchar_fd('%', 1);
-				while (flags[2]-- - precision)
+				while (--flags[2])
 					ft_putchar_fd(' ', 1);
 			}
 			else // right justified
 			{
-				while (flags[2]-- - precision)
+				while (--flags[2])
 					ft_putchar_fd(' ', 1);
-				i = 1;
-				while (precision-- - i++)
-					ft_putchar_fd('0', 1);
 				ft_putchar_fd('%', 1);
 			}
 		}
 		else // not space padded, left justified by default
 		{
 			printed_bytes = precision;
-			while (precision-- - 1)
+			ft_putchar_fd('%', 1);
+			while (--precision)
 				ft_putchar_fd('0', 1);
-				ft_putchar_fd('%', 1);
 		}
 	}
 	else // precision less than or equal to str_len
@@ -799,7 +793,7 @@ static int	print_conversion_perc(int *flags)
 		}
 		else // no padding
 		{
-				ft_putchar_fd('%', 1);
+			ft_putchar_fd('%', 1);
 			printed_bytes = 1;
 		}
 	}
