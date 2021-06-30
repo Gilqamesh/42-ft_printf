@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/29 20:21:32 by edavid           ###   ########.fr       */
+/*   Updated: 2021/06/30 12:33:59 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ static char	*malloc_conv_spec(char *format, int *format_index)
 	{
 		index++;
 	}
-	else if (format[index] == '.')
+	if (format[index] == '.')
 	{
 		index++;
 		if (format[index] == '*')
@@ -58,6 +58,7 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 
 	conv_spec_index = 0;
 	c = conv_spec[conv_spec_index];
+	// printf("conv spec: %s", conv_spec);
 	while (c == '-' || c == '0')
 	{
 		if (c == '-')
@@ -76,17 +77,26 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 	}
 	if (c == '*') // This is not precision, this is field width
 	{
-		flags[3] = -3;
 		flags[2] = va_arg(ap, int);
-		conv_spec_index++;
+		if (flags[2] < 0)
+		{
+			flags[2] *= -1;
+			flags[0] = 1;
+		}
+		c = conv_spec[++conv_spec_index];
 	}
-	else if (c == '.')
+	if (c == '.')
 	{
 		c = conv_spec[++conv_spec_index];
 		if (c == '*')
 		{
 			flags[3] = -1;
 			flags[4] = va_arg(ap, int);
+			if (flags[4] < 0)
+			{
+				flags[3] = -3;
+				flags[0] = 0
+			}
 			conv_spec_index++;
 		}
 		else
@@ -107,9 +117,9 @@ static int	set_flags(char *conv_spec, int *flags, va_list ap)
 	}
 	else
 		flags[3] = -3; // no precision
-	printf("flags: \n");
-	for (int i = 0; i < 5; i++)
-		printf("%d: %d\n", i, flags[i]);
+	// printf("flags: \n");
+	// for (int i = 0; i < 5; i++)
+	// 	printf("%d: %d\n", i, flags[i]);
 	return (conv_spec_index);
 }
 
