@@ -1,5 +1,5 @@
 libftprintf.a
-driver*
+driver.c
 test.out
 *.o
 .DS_Store
