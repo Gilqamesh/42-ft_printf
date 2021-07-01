@@ -1,4 +1,3 @@
-pft/
-42TESTERS-PRINTF/
-pft_2019/
-pft/
+libftprintf.a
+driver*
+test.out
