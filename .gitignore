@@ -1,3 +1,4 @@
 libftprintf.a
 driver*
 test.out
+*.o

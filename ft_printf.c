@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/07/01 11:45:28 by edavid           ###   ########.fr       */
+/*   Updated: 2021/07/01 11:47:10 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -941,7 +941,6 @@ int	ft_printf(const char *format, ...)
 	int		n_of_printed;
 	char	*conversion_specifier;
 	void	*current_arg;
-	int		
 
 	format_index = 0;
 	n_of_printed = 0;
