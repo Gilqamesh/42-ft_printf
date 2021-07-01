@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/07/01 11:27:52 by edavid           ###   ########.fr       */
+/*   Updated: 2021/07/01 11:32:27 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -574,10 +574,13 @@ static int	print_conversion_uint(unsigned int n, int *flags)
 			printed_bytes = flags[2];
 			if (flags[0]) // left justified
 			{
-				while (precision - conv_str_len++)
+				while (precision-- - conv_str_len)
+				{
 					ft_putchar_fd('0', 1);
+					flags[2]--;
+				}
 				ft_putstr_fd(converted_str, 1);
-				while (flags[2]-- - precision)
+				while (flags[2]-- - conv_str_len)
 					ft_putchar_fd(' ', 1);
 			}
 			else // right justified
@@ -754,14 +757,17 @@ static int	print_conversion_perc(int *flags)
 		}
 		else // right justified
 		{
+			printed_bytes = 1;
 			if (flags[1])
 			{
 				while (flags[2]-- - 1)
 					ft_putchar_fd('0', 1);
 			}
 			else
+			{
 				while (flags[2]-- - 1)
 					ft_putchar_fd(' ', 1);
+			}
 			ft_putchar_fd('%', 1);
 		}
 	}
