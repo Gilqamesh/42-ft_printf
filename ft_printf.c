@@ -6,7 +6,7 @@
 /*   By: edavid <edavid@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 14:20:43 by edavid            #+#    #+#             */
-/*   Updated: 2021/06/30 20:34:19 by edavid           ###   ########.fr       */
+/*   Updated: 2021/07/01 11:27:52 by edavid           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -552,7 +552,7 @@ static char	*ft_utox(unsigned int n, char check_casing)
 static int	print_conversion_uint(unsigned int n, int *flags)
 {
 	char	*converted_str;
-	char	conv_str_len;
+	int		conv_str_len;
 	int		precision;
 	int		printed_bytes;
 
@@ -734,70 +734,41 @@ static int	print_conversion_perc(int *flags)
 	int		precision;
 	int		printed_bytes;
 
-	if (flags[3] == -3)	// no precision
-		precision = -1;
-	else if (flags[3] == -1) 	// read from *
-		precision = flags[4];
-	else						// has precision
-		precision = flags[3];
-	if (precision > 1) // pad precision - conv_str_len 0s
+	if (flags[2] > 1) // padded
 	{
 		printed_bytes = flags[2];
-		if (flags[0]) // left justified
+		if (flags[0])
 		{
+			if (flags[1]) // 0 padded instead of space
+			{
+				while (flags[2]-- - 1)
+					ft_putchar_fd('0', 1);
 			ft_putchar_fd('%', 1);
-			while (--flags[2])
-				ft_putchar_fd(' ', 1);
+			}
+			else
+			{
+			ft_putchar_fd('%', 1);
+				while (flags[2]-- - 1)
+					ft_putchar_fd(' ', 1);
+			}
 		}
 		else // right justified
 		{
 			if (flags[1])
-				while (--flags[2])
+			{
+				while (flags[2]-- - 1)
 					ft_putchar_fd('0', 1);
+			}
 			else
-				while (--flags[2])
+				while (flags[2]-- - 1)
 					ft_putchar_fd(' ', 1);
 			ft_putchar_fd('%', 1);
 		}
 	}
-	else // precision less than or equal to str_len
+	else // no padding
 	{
-		if (flags[2] > 1) // padded
-		{
-			printed_bytes = flags[2];
-			if (flags[0])
-			{
-				if (flags[1] && precision == -1) // 0 padded instead of space
-				{
-					while (flags[2]-- - 1)
-						ft_putchar_fd('0', 1);
-				ft_putchar_fd('%', 1);
-				}
-				else
-				{
-				ft_putchar_fd('%', 1);
-					while (flags[2]-- - 1)
-						ft_putchar_fd(' ', 1);
-				}
-			}
-			else // right justified
-			{
-				if (flags[1] && precision == -1)
-				{
-					while (flags[2]-- - 1)
-						ft_putchar_fd('0', 1);
-				}
-				else
-					while (flags[2]-- - 1)
-						ft_putchar_fd(' ', 1);
-				ft_putchar_fd('%', 1);
-			}
-		}
-		else // no padding
-		{
-			ft_putchar_fd('%', 1);
-			printed_bytes = 1;
-		}
+		ft_putchar_fd('%', 1);
+		printed_bytes = 1;
 	}
 	return (printed_bytes);
 }
